@@ -1,7 +1,10 @@
 #!/bin/bash -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 TMPDIR=$(mktemp -d)/
 cp $1 $TMPDIR/shellcode.raw
+chmod 755 $TMPDIR
 cd $TMPDIR
 cat <<END >shellcode.s
 .globl _start
@@ -16,33 +19,4 @@ RAW=${ASM%%.s}.raw
 gcc -static -nostdlib -o $ELF $ASM
 objcopy --update-section .text=$RAW $ELF
 
-echo
-objdump -M intel -d $ELF | tail -n+8 | sed -e "s/^ */[-] /"
-
-echo
-hd $RAW | head -n-1 | sed -e "s/^ */[-] /"
-
-echo
-echo "[+] C"
-xxd -i -a $RAW
-
-echo
-echo "[+] python2"
-echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".decode(\"hex\")"
-
-echo
-echo "[+] python3"
-echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".unhex()"
-
-echo
-echo "[-] SIZE: $(du -sb $RAW)"
-
-grep -lPaq '\x00' shellcode.raw && echo "[!] CHECK: \0 found."
-grep -lPaq '\x0a' shellcode.raw && echo "[!] CHECK: \n found."
-grep -lPaq '\x0d' shellcode.raw && echo "[!] CHECK: \r found."
-grep -lPaq '\x20' shellcode.raw && echo "[!] CHECK: Spaces found."
-
-echo
-echo "[-] strace"
-sudo -u nobody strace -b execve ./$ELF 2>&1 | sed -u -e "s/^/[-] /" | head -n-1
-
+$SCRIPT_DIR/analyze ./$ELF

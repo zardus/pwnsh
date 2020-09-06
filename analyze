@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+ELF=$1
+RAW=$(mktemp)
+objcopy --dump-section .text=$RAW $ELF
+
+echo
+echo "[-] objdump"
+objdump -M intel -d $ELF | tail -n+8 | sed -e "s/^ *401//" #| sed -e "s/^ */[-] /"
+
+echo
+echo "[-] hd"
+hd $RAW | head -n-1 #| sed -e "s/^ */[-] /"
+
+echo
+echo "[+] C"
+xxd -i -a $RAW | tr '\n' ' ' | sed -e "s/; */;\n/g" -e "s/ \+/ /g" | sed -e "s/$(echo $RAW | tr -- '-./' '___')/shellcode/g"
+
+echo
+echo "[+] python2"
+echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".decode(\"hex\")"
+
+echo
+echo "[+] python3"
+echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".unhex()"
+
+echo
+echo "[+] shell, python2, python3, C"
+echo SHELLCODE=\"$(xxd -p -c1 $RAW | sed -e "s/^/\\\\x/" | tr -d '\n')\"
+
+echo
+echo "[-] SIZE: $(du -sb $RAW)" | cut -f1
+
+grep -lPaq '\x00' $RAW && echo "[!] BYTE CHECK: \0 found."
+grep -lPaq '\x0a' $RAW && echo "[!] BYTE CHECK: \n found."
+grep -lPaq '\x0d' $RAW && echo "[!] BYTE CHECK: \r found."
+grep -lPaq '\x20' $RAW && echo "[!] BYTE CHECK: Spaces found."
+
+echo
+echo "[-] strace"
+sudo -u nobody strace -b execve $ELF 2>&1 | head -n-1 #| sed -u -e "s/^/[-] /"
+
+rm -f $RAW
