@@ -2,6 +2,7 @@
 
 Random scripts for shellcoding.
 
-- mksh: build shellcode, `mksh shellcode.s` or `mksh "mov rax, 60; syscall"`
-- sc: lookup syscall number, `sc x86_64 read`
+- assemble: build shellcode, `assemble shellcode.s` or `assemble "mov rax, 60; syscall"`
+- disassemble: build shellcode, `disassemble shellcode.raw` or `disassemble <(echo -e $'\xcc')`
+- lookup-syscall: lookup syscall number, `lookup-syscall x86_64 read`
 - update-syscalls: update the syscall tables
