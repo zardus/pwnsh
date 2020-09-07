@@ -12,4 +12,10 @@ then
 	exit 1
 fi
 
-grep -P "\t$SYSCALL\t" $SYSCALL_DIR/$ARCH.tbl | cut -f1
+if [[ $SYSCALL =~ ^-?[0-9]+$ ]]
+then
+	grep -P "^$SYSCALL\t" $SYSCALL_DIR/$ARCH.tbl | cut -f3
+else
+	grep -P "\t$SYSCALL\t" $SYSCALL_DIR/$ARCH.tbl | cut -f1
+fi | head -n1
+
