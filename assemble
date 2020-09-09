@@ -2,6 +2,22 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+CONSOLE=0
+while getopts "c" OPT
+do
+        case $OPT in
+                c)
+                        CONSOLE=1
+                        ;;
+                ?)
+                        OPTIND=$(($OPTIND-1))
+                        break
+                        ;;
+        esac
+done
+shift $((OPTIND-1))
+
+
 if [ -f "$1" ]
 then
 	ASM="$1"
@@ -21,11 +37,16 @@ fi
 ELF=${ASM%%.s}.elf
 RAW=${ASM%%.s}.raw
 
-echo "[+] ASM file: $TMPDIR$ASM"
-echo "[+] ELF file: $TMPDIR$ELF"
-echo "[+] RAW file: $TMPDIR$RAW"
-
 gcc -static -nostdlib -o $ELF $ASM
 objcopy --dump-section .text=$RAW $ELF
 
-$SCRIPT_DIR/analyze ./$ELF $RAW
+if [ "$CONSOLE" -eq 0 ]
+then
+	echo "[+] ASM file: $TMPDIR$ASM"
+	echo "[+] ELF file: $TMPDIR$ELF"
+	echo "[+] RAW file: $TMPDIR$RAW"
+
+	$SCRIPT_DIR/analyze ./$ELF $RAW
+else
+	cat $RAW
+fi
