@@ -1,8 +1,16 @@
 #!/bin/bash
 
+if [ $# -eq 2 ]
+then
+	ARCH=$1
+	SYSCALL=$2
+elif [ $# -eq 1 ]
+then
+	ARCH=$(uname -m)
+	SYSCALL=$1
+fi
+
 SYSCALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/syscalls
-ARCH=$1
-SYSCALL=$2
 
 if [ ! -f $SYSCALL_DIR/$ARCH.tbl ]
 then
