@@ -2,7 +2,7 @@
 
 FILE=$(mktemp)
 
-cat <<END | gcc -x c - -o $FILE
+cat <<END | gcc -w -x c - -o $FILE
 #include <aio.h>
 #include <aliases.h>
 #include <alloca.h>
