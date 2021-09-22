@@ -10,7 +10,7 @@ then
 	SYSCALL=$1
 fi
 
-SYSCALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/syscalls
+SYSCALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/../syscalls
 
 if [ ! -f $SYSCALL_DIR/$ARCH.tbl ]
 then
