@@ -1,15 +1,29 @@
 #!/bin/bash
 
-if [ $# -eq 2 ]
-then
-	ARCH=$1
-	SYSCALL=$2
-elif [ $# -eq 1 ]
-then
-	ARCH=$(uname -m)
-	SYSCALL=$1
-fi
+ARCH=x86_64
+while getopts "ha:" OPT
+do
+        case $OPT in
+                a) ARCH=$OPTARG ;;
+                h)
+                        echo "$0 [OPTIONS] SYSCALL"
+                        echo ""
+                        echo "Lookup syscall given number or number given syscall."
+                        echo ""
+                        echo "Options:"
+                        echo "	-a ARCH		architecture (default: x86_64)"
+                        echo "	-h		this help"
+                        exit
+                        ;;
+                ?)
+                        OPTIND=$(($OPTIND-1))
+                        break
+                        ;;
+        esac
+done
+shift $((OPTIND-1))
 
+SYSCALL=$1
 SYSCALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/../syscalls
 
 if [ ! -f $SYSCALL_DIR/$ARCH.tbl ]
