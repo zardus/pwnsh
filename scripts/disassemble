@@ -1,22 +1,51 @@
 #!/bin/bash -e
 
+ARCH=x86_64
+while getopts "ha:" OPT
+do
+        case $OPT in
+                a) ARCH=$OPTARG ;;
+                h)
+                        echo "$0 [OPTIONS] PATH"
+                        echo ""
+                        echo "Options:"
+                        echo "	-a ARCH		architecture (default: x86_64)"
+                        echo "	-h		this help"
+                        exit
+                        ;;
+                ?)
+                        OPTIND=$(($OPTIND-1))
+                        break
+                        ;;
+        esac
+done
+shift $((OPTIND-1))
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# make the ELF
+
 TMPDIR=$(mktemp -d)/
-cp $1 $TMPDIR/shellcode.raw
+
+if [ -f "$1" ]
+then
+	cp $1 $TMPDIR/shellcode.raw
+else
+	timeout 1 dd of=$TMPDIR/shellcode.raw 2>/dev/null
+fi
+
 chmod 755 $TMPDIR
 cd $TMPDIR
 cat <<END >shellcode.s
 .globl _start
 _start:
-.intel_syntax noprefix
-pop rax
+.ascii "a"
 END
 ASM=shellcode.s
-ELF=${ASM%%.s}.elf
-RAW=${ASM%%.s}.raw
+ELF=shellcode.elf
+RAW=shellcode.raw
 
-gcc -static -nostdlib -o $ELF $ASM
-objcopy --update-section .text=$RAW $ELF
+$ARCH-linux-gnu-gcc -static -nostdlib -o $ELF $ASM
+$ARCH-linux-gnu-objcopy --update-section .text=$RAW $ELF
 
-$SCRIPT_DIR/analyze ./$ELF
+$SCRIPT_DIR/analyze -a $ARCH ./$ELF

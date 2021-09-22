@@ -3,11 +3,26 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CONSOLE=0
-while getopts "c" OPT
+ANALYZE=1
+ARCH=x86_64
+while getopts "hca:A" OPT
 do
         case $OPT in
                 c)
                         CONSOLE=1
+                        ANALYZE=0
+                        ;;
+                A) ANALYZE=0 ;;
+                a) ARCH=$OPTARG ;;
+                h)
+                        echo "$0 [OPTIONS] ASSEMBLY"
+                        echo ""
+                        echo "Options:"
+                        echo "	-c		output assembly to console"
+                        echo "	-A		skip the analysis"
+                        echo "	-a ARCH		architecture (default: x86_64)"
+                        echo "	-h		this help"
+                        exit
                         ;;
                 ?)
                         OPTIND=$(($OPTIND-1))
@@ -24,29 +39,27 @@ then
 else
 	[ -n "$TMPDIR" ] || TMPDIR=$(mktemp -d)/
 	chmod 755 $TMPDIR
-	cd $TMPDIR
-	cat <<END >shellcode.s
-.globl _start
-_start:
-.intel_syntax noprefix
-$1
-END
-	ASM=shellcode.s
+	ASM=${TMPDIR}shellcode.s
+
+	echo ".globl _start" >> $ASM
+	echo "_start:" >> $ASM
+	[ "$ARCH" == "x86_64" -o "$ARCH" == "i686" ] && echo ".intel_syntax noprefix" >> $ASM
+	echo "$1" >> $ASM
 fi
 
 ELF=${ASM%%.s}.elf
 RAW=${ASM%%.s}.raw
 
-gcc -static -nostdlib -o $ELF $ASM
-objcopy --dump-section .text=$RAW $ELF
+$ARCH-linux-gnu-gcc -static -nostdlib -o $ELF $ASM
+$ARCH-linux-gnu-objcopy --dump-section .text=$RAW $ELF
 
 if [ "$CONSOLE" -eq 0 ]
 then
-	echo "[+] ASM file: $TMPDIR$ASM"
-	echo "[+] ELF file: $TMPDIR$ELF"
-	echo "[+] RAW file: $TMPDIR$RAW"
+	echo "[+] ASM file: $ASM"
+	echo "[+] ELF file: $ELF"
+	echo "[+] RAW file: $RAW"
 
-	$SCRIPT_DIR/analyze ./$ELF $RAW
+	[ "$ANALYZE" -eq 0 ] || $SCRIPT_DIR/analyze -a $ARCH $ELF $RAW
 else
 	cat $RAW
 fi

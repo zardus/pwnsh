@@ -1,32 +1,46 @@
 #!/bin/bash -e
 
+ARCH=x86_64
+while getopts "ha:" OPT
+do
+        case $OPT in
+                a) ARCH=$OPTARG ;;
+                h)
+                        echo "$0 [OPTIONS] ELF_PATH"
+                        echo ""
+                        echo "Analyze an ELF containing shellcode."
+                        echo ""
+                        echo "Options:"
+                        echo "	-h		this help"
+                        exit
+                        ;;
+                ?)
+                        OPTIND=$(($OPTIND-1))
+                        break
+                        ;;
+        esac
+done
+shift $((OPTIND-1))
+
 ELF=$1
 RAW=$(mktemp)
-objcopy --dump-section .text=$RAW $ELF
+$ARCH-linux-gnu-objcopy --dump-section .text=$RAW $ELF
 
 echo
 echo "[-] objdump"
-objdump -M intel -d $ELF | tail -n+8 | sed -e "s/^ *401//" #| sed -e "s/^ */[-] /"
+$ARCH-linux-gnu-objdump -M intel -d $ELF | tail -n+8 | sed -e "s/^ *[0-9a-f]*\([0-9a-f][0-9a-f][0-9a-f]:\)/\1/" #| sed -e "s/^ */[-] /"
 
 echo
 echo "[-] hd"
 hd $RAW | head -n-1 #| sed -e "s/^ */[-] /"
 
 echo
-echo "[+] C"
-xxd -i -a $RAW | tr '\n' ' ' | sed -e "s/; */;\n/g" -e "s/ \+/ /g" | sed -e "s/$(echo $RAW | tr -- '-./' '___')/shellcode/g"
-
-echo
-echo "[+] python2"
-echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".decode(\"hex\")"
-
-echo
-echo "[+] python3"
-echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".unhex()"
-
-echo
-echo "[+] shell, python2, python3, C"
-echo SHELLCODE=\"$(xxd -p -c1 $RAW | sed -e "s/^/\\\\x/" | tr -d '\n')\"
+echo "[+] Formats for source:"
+xxd -i -a $RAW | tr '\n' ' ' | sed -e "s/; */;\n/g" -e "s/ \+/ /g" | sed -e "s/$(echo $RAW | tr -- '-./' '___')/shellcode/g" -e "s|$|    // C|"
+echo shellcode=\"$(xxd -p -c1 $RAW | sed -e "s/^/\\\\x/" | tr -d '\n')\"   '    # C, python2'
+echo "shellcode = \"$(xxd -p -a -c 256 $RAW)\".decode(\"hex\")    # python2"
+echo "shellcode = bytes.fromhex(\"$(xxd -p -a -c 256 $RAW)\")    # python3"
+echo shellcode=b\"$(xxd -p -c1 $RAW | sed -e "s/^/\\\\x/" | tr -d '\n')\"   '    # python3'
 
 echo
 echo "[-] SIZE: $(du -sb $RAW)" | cut -f1
