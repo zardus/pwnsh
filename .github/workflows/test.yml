@@ -7,7 +7,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apt-cache search "gcc-[a-z0-9A-Z]*-linux-gnu" | grep ^g | sed -e "s|/.*||" | xargs sudo apt-get install -y
+        apt-cache search "gcc-[a-z0-9A-Z]*-linux-gnu" | grep ^g | sed -e "s| .*||" | xargs sudo apt-get install -y
         sudo apt-get install -y strace xxd bsdmainutils
     - name: Test
       run: ./test.sh
