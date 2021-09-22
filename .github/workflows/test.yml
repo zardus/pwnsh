@@ -1,0 +1,13 @@
+name: Run Tests
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install dependencies
+      run: |
+        apt search "gcc-[a-z0-9A-Z]*-linux-gnu" | grep ^g | sed -e "s|/.*||" | xargs apt-get install -y
+        apt-get install -y strace xxd bsdmainutils
+    - name: Test
+      run: ./test.sh
