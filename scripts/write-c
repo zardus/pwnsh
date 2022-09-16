@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 cat <<END
+#define _GNU_SOURCE
 #include <aio.h>
 #include <aliases.h>
 #include <alloca.h>
