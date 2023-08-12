@@ -2,4 +2,16 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-$SCRIPT_DIR/run-c 'printf("%#llx\n", '$1');'
+if [[ $1 =~ ^[0-9A-Fa-fx]+$ ]]
+then
+	$SCRIPT_DIR/write-c '' > /tmp/constants-$$.c
+	HEX=$(printf "0x%x" $1)
+	DEC=$(printf "%d" $1)
+	gcc -dM -E /tmp/constants-$$.c | grep -e " $HEX$"
+	gcc -dM -E /tmp/constants-$$.c | grep -e " $DEC$"
+else
+	$SCRIPT_DIR/run-c 'printf("%#llx\n", '$1');' 2>&1 || {
+		$SCRIPT_DIR/write-c '' > /tmp/constants-$$.c
+		gcc -dM -E /tmp/constants-$$.c | grep "$1"
+	}
+fi
